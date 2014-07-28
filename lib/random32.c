@@ -150,6 +150,7 @@ static void prandom_warmup(struct rnd_state *state)
 static u32 __extract_hwseed(void)
 {
 	unsigned int val = 0;
+	u32 val = 0;
 
 	(void)(arch_get_random_seed_int(&val) ||
 	       arch_get_random_int(&val));
