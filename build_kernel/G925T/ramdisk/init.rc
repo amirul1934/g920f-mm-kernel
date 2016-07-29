@@ -14,14 +14,14 @@ import /init.carrier.rc
 import /init.sec_debug.rc
 import /init.container.rc
 import /init.rilcommon.rc
-import /init.twisted.rc
+import /init.sickness.rc
 
 on early-init
     # Set init and its forked children's oom_adj.
     write /proc/1/oom_score_adj -1000
 
     # Set the security context of /adb_keys if present.
-    restorecon /adb_keys
+  # restorecon /adb_keys
 
     start ueventd
 
@@ -67,8 +67,6 @@ on init
 
     mkdir /.system
     mkdir /system
-    mkdir /su 0755 root root # create mount point for SuperSU
-    # HRT-KERNEL-SU
     mkdir /data 0771 system system
     mkdir /cache 0770 system cache
     mkdir /config 0500 root root
@@ -92,14 +90,14 @@ on init
 
     # Directory for staging bindmounts
     mkdir /mnt/secure/staging 0700 root root
-    restorecon_recursive /mnt/secure/staging
+  #  restorecon_recursive /mnt/secure/staging
 ## Samsung ODE <<<
 
     # Directory-target for where the secure container
     # imagefile directory will be bind-mounted
     mkdir /mnt/secure/asec  0700 root root
     mount tmpfs tmpfs /mnt/secure/asec mode=0700,uid=0,gid=0
-    restorecon_recursive /mnt/secure/asec
+   # restorecon_recursive /mnt/secure/asec
 
     mkdir /mnt/asec 0755 root system
     mkdir /mnt/obb 0755 root system
@@ -313,7 +311,7 @@ on post-fs
     # permissions if created by the recovery system.
     mkdir /cache/recovery 0770 system cache
 
-    restorecon /cache/recovery
+   # restorecon /cache/recovery
 
     #change permissions on vmallocinfo so we can grab it from bugreports
     chown root log /proc/vmallocinfo
@@ -336,7 +334,7 @@ on post-fs
 
     # create the lost+found directories, so as to enforce our permissions
     mkdir /cache/lost+found 0770 root root
-    restorecon /cache/lost+found
+   # restorecon /cache/lost+found
 
 on post-fs-data
     # Reload SE Android Policy
@@ -359,7 +357,7 @@ on post-fs-data
     chown system system /data
     chmod 0771 /data
     # We restorecon /data in case the userdata partition has been reset.
-    restorecon /data
+   # restorecon /data
 
     # Emulated internal storage area
     mkdir /data/media 0770 media_rw media_rw
@@ -459,8 +457,8 @@ on post-fs-data
     chown system system /dev/icdr
     chmod 0644 /dev/icdr
     chown system system /dev/tzic
-    restorecon /dev/icd
-    restorecon /dev/icdr
+   # restorecon /dev/icd
+   # restorecon /dev/icdr
     
     #SideSync
     chown system system /dev/android_ssusbcon
@@ -485,8 +483,8 @@ on post-fs-data
     chown system system /data/anr
     chmod 0775 /data/log
     chmod 0775 /data/anr
-    restorecon /data/log
-    restorecon /data/anr
+   # restorecon /data/log
+   # restorecon /data/anr
 
     # mobicore
     mkdir /data/app/mcRegistry 0775 system system
@@ -504,7 +502,7 @@ on post-fs-data
 
     # create the lost+found directories, so as to enforce our permissions
     mkdir /data/lost+found 0770 root root
-    restorecon /data/lost+found
+   # restorecon /data/lost+found
 
     # create directory for DRM plug-ins - give drm the read/write access to
     # the following directory.
@@ -553,8 +551,8 @@ on post-fs-data
     chown root root /system/lib/drm
     chmod 0775 /system/lib/drm
 
-    restorecon -R /efs
-    restorecon -R /carrier
+   # restorecon -R /efs
+   # restorecon -R /carrier
 # ]
 
     # symlink to bugreport storage location
@@ -574,7 +572,7 @@ on post-fs-data
 
     # Separate location for storing security policy files on data    
     #start SEC_PRODUCT_FEATURE_COMMON_SUPPORT_SE_FOR_ANDROID 
-    mkdir /data/security 0700 system system
+    mkdir /data/security 0710 system system_access
     #end SEC_PRODUCT_FEATURE_COMMON_SUPPORT_SE_FOR_ANDROID
     
     # We restorecon /data when file_contexts is changed(SPD, FOTA, HOME)
@@ -605,7 +603,7 @@ on boot
     # parameters to match how it is managing things.
     write /proc/sys/vm/overcommit_memory 1
     write /proc/sys/vm/min_free_order_shift 4
-    chown root root /sys/module/lowmemorykiller/parameters/adj
+    chown root system /sys/module/lowmemorykiller/parameters/adj
     chmod 0220 /sys/module/lowmemorykiller/parameters/adj
     chown root system /sys/module/lowmemorykiller/parameters/minfree
     chmod 0220 /sys/module/lowmemorykiller/parameters/minfree
@@ -749,8 +747,8 @@ on boot
     export MC_AUTH_TOKEN_PATH /efs
 
     # Assume SMP uses shared cpufreq policy for all CPUs
-    chown system system /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
-    chmod 0660 /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+    chown root root /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+    chmod 0640 /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
 
     chown system system /sys/class/timed_output/vibrator/enable
     chown system system /sys/class/timed_output/vibrator/intensity		
@@ -1049,8 +1047,10 @@ on property:selinux.reload_policy=1
     chown system system /sys/fs/selinux/commit_pending_bools
 
 # SEC_SELINUX
-on property:selinux.sec.restorecon=1
-    restorecon_msc -RF /data
+# on property:selinux.sec.restorecon=1
+  #  restorecon_msc -RF /data
+    chown system system_access /data/security/aasa
+    chmod 2750 /data/security/aasa
 
 on property:sys.powerctl=*
     powerctl ${sys.powerctl}
@@ -1077,7 +1077,7 @@ on property:sys.sysctl.tcp_def_init_rwnd=*
     write /proc/sys/net/ipv4/tcp_default_init_rwnd ${sys.sysctl.tcp_def_init_rwnd}
 
 
-on property:init.svc.bootanim=stopped
+on property:sys.boot_completed=1
     start auditd
 
 # Reload SE Android Policy for MDM
@@ -1100,7 +1100,7 @@ service sysmon /system/bin/sysmon
 service ueventd /sbin/ueventd
     class core
     critical
-    seclabel u:r:ueventd:s0
+   # seclabel u:r:ueventd:s0
 
 service logd /system/bin/logd
     class core
@@ -1118,7 +1118,7 @@ service logd-reinit /system/bin/logd --reinit
 service healthd /sbin/healthd
     class core
     critical
-    seclabel u:r:healthd:s0
+   # seclabel u:r:healthd:s0
     group root system
 
 service lpm /system/bin/lpm
@@ -1131,7 +1131,7 @@ service console /system/bin/sh
     disabled
     user shell
     group shell log
-    seclabel u:r:shell:s0
+   # seclabel u:r:shell:s0
 
 # for RIL MFG (TestMode)
 service DR-daemon /system/bin/ddexe
@@ -1220,11 +1220,11 @@ on property:ro.debuggable=1
     start console
 
 # adbd is controlled via property triggers in init.<platform>.usb.rc
-service adbd /sbin/adbd --root_seclabel=u:r:su:s0
+service adbd /sbin/adbd 
     class core
     socket adbd stream 660 system system
     disabled
-    seclabel u:r:adbd:s0
+   # seclabel u:r:adbd:s0
 
 # adbd on at boot in emulator
 on property:ro.kernel.qemu=1
@@ -1615,10 +1615,10 @@ on property:service.vpnclientd.enable=0
 # Reactivation lock
 	service reactived /system/bin/reactived
 	class late_start
- 
-# Sickness.Sh Activation 
-service sickness-init /sbin/sickness.sh
-    class core
+
+# Call Post-init script
+service sick-init /sbin/sick.sh
+    class main
     user root
     oneshot
 
@@ -1627,4 +1627,4 @@ service sysinit /system/bin/logwrapper /system/xbin/busybox run-parts /system/et
     class late_start
     user root
     group shell
-    oneshot    
+    oneshot   
